@@ -1,0 +1,18 @@
+runtime: go
+api_version: go1
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^pkg/
+handlers:
+- url: "/.*"
+  script: _go_app
+env_variables:
+  GCLOUD_PROJECT: PROJCT-ID
+  STORAGE_BUCKET: bucket
+  API_TOKEN: XXXXXXXXXX
+automatic_scaling:
+  max_concurrent_requests: 24

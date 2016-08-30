@@ -1,0 +1,122 @@
+package main
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
+	"google.golang.org/cloud/storage"
+	"net/http"
+	"os"
+	"strings"
+)
+
+var (
+	apiTokens []string
+)
+
+func init() {
+	apiTokens = nil
+	http.HandleFunc("/upload", postHandler)
+}
+
+func mustGetenv(ctx context.Context, k string) string {
+	v := os.Getenv(k)
+	if v == "" {
+		log.Criticalf(ctx, "%s environment variable not set.", k)
+	}
+	return v
+}
+
+func verifyApiToken(token string) error {
+	for _, x := range apiTokens {
+		if x == token {
+			return nil
+		}
+	}
+	return errors.New("invalid api token.")
+}
+
+type Response struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+func postHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	response := Response{false, "something wrong."}
+	code := 500
+
+	defer func() {
+		outjson, e := json.Marshal(response)
+		if e != nil {
+			log.Errorf(ctx, e.Error())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if code == 200 {
+			fmt.Fprint(w, string(outjson))
+		} else {
+			http.Error(w, string(outjson), code)
+		}
+	}()
+
+	if r.Method != "POST" {
+		response.Message = "only POST method method was accepted"
+		code = 404
+		return
+	}
+
+	api_key := r.FormValue("key")
+	filename := r.FormValue("filename")
+	content, err := base64.StdEncoding.DecodeString(r.FormValue("content"))
+	if err != nil {
+		response.Message = "content parameter: invalid base64 encoded."
+		code = 400
+		return
+	}
+
+	if apiTokens == nil {
+		apiTokens = strings.Split(mustGetenv(ctx, "API_TOKEN"), ",")
+	}
+        err = verifyApiToken(api_key)
+	if err != nil {
+		response.Message = err.Error()
+		code = 401
+		return
+	}
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Criticalf(ctx, err.Error())
+		response.Message = err.Error()
+		code = 500
+		return
+	}
+	bucket_name := mustGetenv(ctx, "STORAGE_BUCKET")
+
+	bucket := client.Bucket(bucket_name)
+
+	object := bucket.Object(filename)
+	writer := object.NewWriter(ctx)
+
+	_, err = writer.Write(content)
+	if err != nil {
+		log.Criticalf(ctx, err.Error())
+		code = 500
+		return
+	}
+	err = writer.Close()
+	if err != nil {
+		log.Criticalf(ctx, err.Error())
+		code = 500
+		return
+	}
+
+	response.Success = true
+	response.Message = "ok"
+	code = 200
+	return
+}
