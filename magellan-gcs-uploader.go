@@ -128,32 +128,36 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Insert metadata to BigQuery
-	bqclient, err := bigquery.NewClient(ctx, projectId)
-	if err != nil {
-		log.Criticalf(ctx, err.Error())
-		code = 500
-		return
-	}
-	table := bqclient.OpenTable(projectId, mustGetenv(ctx, "BIGQUERY_DATASET"), mustGetenv(ctx, "BIGQUERY_TABLE"))
-	uploader := table.NewUploader()
-	record := &BigQueryRecord{}
-	record.Row = make(map[string](bigquery.Value))
-	record.Row["gcs_url"] = "gs://" + bucket_name + "/" + filename
-	record.Row["timestamp"] = time.Now()
-	columns := mustGetenv(ctx, "BIGQUERY_COLUMNS")
-	field_names := strings.Split(columns, ",")
-	for _, fn := range field_names {
-		val := r.FormValue(fn)
-		if val != "" {
-			record.Row[fn] = val
+	dataset_id := mustGetenv(ctx, "BIGQUERY_DATASET")
+	table_id := mustGetenv(ctx, "BIGQUERY_TABLE")
+	if dataset_id != "" && table_id != "" {
+		// Insert metadata to BigQuery
+		bqclient, err := bigquery.NewClient(ctx, projectId)
+		if err != nil {
+			log.Criticalf(ctx, err.Error())
+			code = 500
+			return
 		}
-	}
-	err = uploader.Put(ctx, record)
-	if err != nil {
-		log.Criticalf(ctx, err.Error())
-		code = 500
-		return
+		table := bqclient.OpenTable(projectId, dataset_id, table_id)
+		uploader := table.NewUploader()
+		record := &BigQueryRecord{}
+		record.Row = make(map[string](bigquery.Value))
+		record.Row["gcs_url"] = "gs://" + bucket_name + "/" + filename
+		record.Row["timestamp"] = time.Now()
+		columns := mustGetenv(ctx, "BIGQUERY_COLUMNS")
+		field_names := strings.Split(columns, ",")
+		for _, fn := range field_names {
+			val := r.FormValue(fn)
+			if val != "" {
+				record.Row[fn] = val
+			}
+		}
+		err = uploader.Put(ctx, record)
+		if err != nil {
+			log.Criticalf(ctx, err.Error())
+			code = 500
+			return
+		}
 	}
 
 	response.Success = true
