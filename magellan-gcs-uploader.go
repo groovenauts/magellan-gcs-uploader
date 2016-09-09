@@ -128,8 +128,8 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dataset_id := mustGetenv(ctx, "BIGQUERY_DATASET")
-	table_id := mustGetenv(ctx, "BIGQUERY_TABLE")
+	dataset_id := os.Getenv("BIGQUERY_DATASET")
+	table_id := os.Getenv("BIGQUERY_TABLE")
 	if dataset_id != "" && table_id != "" {
 		// Insert metadata to BigQuery
 		bqclient, err := bigquery.NewClient(ctx, projectId)
