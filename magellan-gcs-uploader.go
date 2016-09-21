@@ -8,9 +8,11 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
 	"google.golang.org/cloud/bigquery"
 	"google.golang.org/cloud/storage"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -53,6 +55,27 @@ type BigQueryRecord struct {
 
 func (r *BigQueryRecord) Save() (row map[string]bigquery.Value, insertID string, err error) {
 	return r.Row, "", nil
+}
+
+func postBlocksFlow(ctx context.Context, blocks_url, blocks_api_token, gcs_url string, r *http.Request) error {
+	values := url.Values{}
+	values.Set("api_token", blocks_api_token)
+	values.Set("gcs_url", gcs_url)
+	params := os.Getenv("BLOCKS_PARAMS")
+	param_names := strings.Split(params, ",")
+	for _, pn := range param_names {
+		val := r.FormValue(pn)
+		if val != "" {
+			values.Set(pn, val)
+		}
+	}
+	client := urlfetch.Client(ctx)
+	res, err := client.PostForm(blocks_url, values)
+	if err == nil {
+		defer res.Body.Close()
+	}
+
+	return err
 }
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,15 +141,20 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = writer.Write(content)
 	if err != nil {
 		log.Criticalf(ctx, err.Error())
+		response.Message = err.Error()
 		code = 500
 		return
 	}
 	err = writer.Close()
 	if err != nil {
 		log.Criticalf(ctx, err.Error())
+		response.Message = err.Error()
 		code = 500
 		return
 	}
+
+	gcs_url := "gs://" + bucket_name + "/" + filename
+	timestamp := time.Now()
 
 	dataset_id := os.Getenv("BIGQUERY_DATASET")
 	table_id := os.Getenv("BIGQUERY_TABLE")
@@ -135,6 +163,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		bqclient, err := bigquery.NewClient(ctx, projectId)
 		if err != nil {
 			log.Criticalf(ctx, err.Error())
+			response.Message = err.Error()
 			code = 500
 			return
 		}
@@ -142,8 +171,8 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		uploader := table.NewUploader()
 		record := &BigQueryRecord{}
 		record.Row = make(map[string](bigquery.Value))
-		record.Row["gcs_url"] = "gs://" + bucket_name + "/" + filename
-		record.Row["timestamp"] = time.Now()
+		record.Row["gcs_url"] = gcs_url
+		record.Row["timestamp"] = timestamp
 		columns := mustGetenv(ctx, "BIGQUERY_COLUMNS")
 		field_names := strings.Split(columns, ",")
 		for _, fn := range field_names {
@@ -155,6 +184,19 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		err = uploader.Put(ctx, record)
 		if err != nil {
 			log.Criticalf(ctx, err.Error())
+			response.Message = err.Error()
+			code = 500
+			return
+		}
+	}
+
+	blocks_url := os.Getenv("BLOCKS_URL")
+	blocks_api_token := os.Getenv("BLOCKS_API_TOKEN")
+	if blocks_url != "" && blocks_api_token != "" {
+		err = postBlocksFlow(ctx, blocks_url, blocks_api_token, gcs_url, r)
+		if err != nil {
+			log.Criticalf(ctx, err.Error())
+			response.Message = err.Error()
 			code = 500
 			return
 		}
