@@ -57,16 +57,17 @@ func (r *BigQueryRecord) Save() (row map[string]bigquery.Value, insertID string,
 	return r.Row, "", nil
 }
 
-func postBlocksFlow(ctx context.Context, blocks_url, blocks_api_token, gcs_url string, r *http.Request) error {
+func postBlocksFlow(ctx context.Context, blocks_url, blocks_api_token, gcs_url string, timestamp time.Time, r *http.Request) error {
 	values := url.Values{}
 	values.Set("api_token", blocks_api_token)
 	values.Set("gcs_url", gcs_url)
-	params := os.Getenv("BLOCKS_PARAMS")
-	param_names := strings.Split(params, ",")
-	for _, pn := range param_names {
-		val := r.FormValue(pn)
-		if val != "" {
-			values.Set(pn, val)
+	values.Set("timestamp", timestamp.Format("2006-01-02T15:04:05.999999Z07:00"))
+	for k, v := range r.Form {
+		if k == "content" || k == "key" {
+			continue
+		}
+		if v[0] != "" {
+			values.Set(k, v[0])
 		}
 	}
 	client := urlfetch.Client(ctx)
@@ -194,7 +195,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	blocks_url := os.Getenv("BLOCKS_URL")
 	blocks_api_token := os.Getenv("BLOCKS_API_TOKEN")
 	if blocks_url != "" && blocks_api_token != "" {
-		err = postBlocksFlow(ctx, blocks_url, blocks_api_token, gcs_url, r)
+		err = postBlocksFlow(ctx, blocks_url, blocks_api_token, gcs_url, timestamp, r)
 		if err != nil {
 			log.Criticalf(ctx, err.Error())
 			response.Message = err.Error()

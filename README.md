@@ -25,7 +25,6 @@ appcfg.py -A YOUR-PROJECT-ID -E STORAGE_BUCKET:YOUR-BUCKET-NAME -E API_TOKEN:XXX
 | `BIGQUERY_COLUMNS` | x | Additional parameters (comma separated) insert into BigQuery table as metadata. |
 | `BLOCKS_URL` | x | Hook URL to invoke BLOCKS flow. |
 | `BLOCKS_API_TOKEN` | x | API Tokent for BLOCKS Board. |
-| `BLOCKS_PARAMS` | x | Additional parameters (comma separated) pass to BLOCKS flow invocation. |
 
 ## Upload package to deploy via Google App Engine Admin API
 
