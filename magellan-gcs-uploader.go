@@ -90,6 +90,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			log.Errorf(ctx, e.Error())
 		}
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		if code == 200 {
 			fmt.Fprint(w, string(outjson))
 		} else {
