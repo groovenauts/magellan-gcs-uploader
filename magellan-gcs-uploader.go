@@ -61,7 +61,7 @@ func postBlocksFlow(ctx context.Context, blocks_url, blocks_api_token, gcs_url s
 	values := url.Values{}
 	values.Set("api_token", blocks_api_token)
 	values.Set("gcs_url", gcs_url)
-	values.Set("timestamp", timestamp.Format("2006-01-02T15:04:05.999999Z07:00"))
+	values.Set("target_time", timestamp.Format("2006-01-02T15:04:05.999999Z07:00"))
 	for k, v := range r.Form {
 		if k == "content" || k == "key" {
 			continue
