@@ -19,7 +19,7 @@ GO_APP_BUILDER="${SDK_BASE}/goroot/bin/go-app-builder"
 
 APP_BASE=$(dirname "$0")
 
-SRCS=magellan-log-collector.go
+SRCS=magellan-gcs-uploader.go
 PKGDIR="${APP_BASE}/pkg/${VERSION}"
 MANIFEST="${PKGDIR}/_manifest"
 
