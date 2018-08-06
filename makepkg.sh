@@ -1,7 +1,7 @@
 #!/bin/bash
 
-APPCFG=$(which appcfg.py)
-if [ "${APPCFG}" = "" ]
+GCLOUD=$(which gcloud)
+if [ "${GCLOUD}" = "" ]
 then
   echo "Cannot find appcfg.py in PATH. Please set environment variable."
   exit 1
@@ -14,8 +14,10 @@ then
   exit 1
 fi
 
-SDK_BASE=$(dirname "${APPCFG}")
-GO_APP_BUILDER="${SDK_BASE}/goroot/bin/go-app-builder"
+API_VERSION="go1.9"
+SDK_BASE=$(dirname $(dirname "${GCLOUD}"))
+GOROOT="${SDK_BASE}/platform/google_appengine/goroot-1.9"
+GO_APP_BUILDER="${SDK_BASE}/platform/google_appengine/goroot-1.9/bin/go-app-builder"
 
 APP_BASE=$(dirname "$0")
 
@@ -30,7 +32,7 @@ mkdir -p "${PKGDIR}"
 
 echo -n > "${MANIFEST}"
 
-for line in $(${GO_APP_BUILDER} -api_version go1 -app_base "${APP_BASE}" -arch 6 -print_extras -goroot "${SDK_BASE}/goroot" ${SRCS})
+for line in $(${GO_APP_BUILDER} -api_version ${API_VERSION} -app_base "${APP_BASE}" -arch 6 -print_extras -goroot "${GOROOT}" ${SRCS})
 do
   filepath=$(echo "${line}" | cut -f 1 -d \|)
   originalpath=$(echo "${line}" | cut -f 2 -d \|)

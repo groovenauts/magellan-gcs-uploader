@@ -1,16 +1,16 @@
 package main
 
 import (
+	"cloud.google.com/go/bigquery"
+	"cloud.google.com/go/storage"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/urlfetch"
-	"google.golang.org/cloud/bigquery"
-	"google.golang.org/cloud/storage"
 	"net/http"
 	"net/url"
 	"os"
@@ -169,8 +169,8 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			code = 500
 			return
 		}
-		table := bqclient.OpenTable(projectId, dataset_id, table_id)
-		uploader := table.NewUploader()
+		table := bqclient.Dataset(dataset_id).Table(table_id)
+		uploader := table.Uploader()
 		record := &BigQueryRecord{}
 		record.Row = make(map[string](bigquery.Value))
 		record.Row["gcs_url"] = gcs_url
