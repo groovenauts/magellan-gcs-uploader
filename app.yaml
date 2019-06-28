@@ -1,18 +1,12 @@
-runtime: go
-api_version: go1.9
-skip_files:
-- ^(.*/)?#.*#$
-- ^(.*/)?.*~$
-- ^(.*/)?.*\.py[co]$
-- ^(.*/)?.*/RCS/.*$
-- ^(.*/)?\..*$
-- ^pkg/
-handlers:
-- url: "/.*"
-  script: _go_app
+runtime: go111
 env_variables:
-  GCLOUD_PROJECT: PROJCT-ID
   STORAGE_BUCKET: bucket
   API_TOKEN: XXXXXXXXXX
+  BIGQUERY_DATASET: dataset_id
+  BIGQUERY_TABLE: table_id
+  BIGQUERY_COLUMNS: field1,field2
+  BLOCKS_URL: https://xxxxx.magellanic-clouds.net
+  BLOCKS_API_TOKEN: xxxxxx
+
 automatic_scaling:
   max_concurrent_requests: 24

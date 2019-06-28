@@ -8,9 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"
+	"golang.org/x/oauth2/google"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,17 +19,13 @@ import (
 
 var (
 	apiTokens []string
+	projectID string
 )
-
-func init() {
-	apiTokens = nil
-	http.HandleFunc("/upload", postHandler)
-}
 
 func mustGetenv(ctx context.Context, k string) string {
 	v := os.Getenv(k)
 	if v == "" {
-		log.Criticalf(ctx, "%s environment variable not set.", k)
+		log.Fatal("%s environment variable not set.", k)
 	}
 	return v
 }
@@ -70,8 +65,7 @@ func postBlocksFlow(ctx context.Context, blocks_url, blocks_api_token, gcs_url s
 			values.Set(k, v[0])
 		}
 	}
-	client := urlfetch.Client(ctx)
-	res, err := client.PostForm(blocks_url, values)
+	res, err := http.PostForm(blocks_url, values)
 	if err == nil {
 		defer res.Body.Close()
 	}
@@ -80,15 +74,14 @@ func postBlocksFlow(ctx context.Context, blocks_url, blocks_api_token, gcs_url s
 }
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
-	projectId := appengine.AppID(ctx)
+	ctx := r.Context()
 	response := Response{false, "something wrong."}
 	code := 500
 
 	defer func() {
 		outjson, e := json.Marshal(response)
 		if e != nil {
-			log.Errorf(ctx, e.Error())
+			log.Printf(e.Error())
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -128,7 +121,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Criticalf(ctx, err.Error())
+		log.Printf(err.Error())
 		response.Message = err.Error()
 		code = 500
 		return
@@ -142,14 +135,14 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = writer.Write(content)
 	if err != nil {
-		log.Criticalf(ctx, err.Error())
+		log.Printf(err.Error())
 		response.Message = err.Error()
 		code = 500
 		return
 	}
 	err = writer.Close()
 	if err != nil {
-		log.Criticalf(ctx, err.Error())
+		log.Printf(err.Error())
 		response.Message = err.Error()
 		code = 500
 		return
@@ -162,9 +155,9 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	table_id := os.Getenv("BIGQUERY_TABLE")
 	if dataset_id != "" && table_id != "" {
 		// Insert metadata to BigQuery
-		bqclient, err := bigquery.NewClient(ctx, projectId)
+		bqclient, err := bigquery.NewClient(ctx, projectID)
 		if err != nil {
-			log.Criticalf(ctx, err.Error())
+			log.Printf(err.Error())
 			response.Message = err.Error()
 			code = 500
 			return
@@ -185,7 +178,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		err = uploader.Put(ctx, record)
 		if err != nil {
-			log.Criticalf(ctx, err.Error())
+			log.Printf(err.Error())
 			response.Message = err.Error()
 			code = 500
 			return
@@ -197,7 +190,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	if blocks_url != "" && blocks_api_token != "" {
 		err = postBlocksFlow(ctx, blocks_url, blocks_api_token, gcs_url, timestamp, r)
 		if err != nil {
-			log.Criticalf(ctx, err.Error())
+			log.Printf(err.Error())
 			response.Message = err.Error()
 			code = 500
 			return
@@ -208,4 +201,25 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	response.Message = "ok"
 	code = 200
 	return
+}
+
+func main() {
+	apiTokens = nil
+	http.HandleFunc("/upload", postHandler)
+
+	credentials, e := google.FindDefaultCredentials(context.Background())
+	if e != nil {
+		log.Fatal(e)
+	}
+
+	projectID = credentials.ProjectID
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+
+	log.Printf("Listening on port %s", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }

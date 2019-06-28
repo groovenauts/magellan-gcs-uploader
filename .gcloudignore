@@ -1,0 +1,9 @@
+.git/
+.gitignore
+*~
+*.back
+.*.swp
+*.yaml
+pkg/
+makepkg.sh
+README.md
