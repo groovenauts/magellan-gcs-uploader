@@ -1,11 +1,7 @@
 #!/bin/bash
 
-GCLOUD=$(which gcloud)
-if [ "${GCLOUD}" = "" ]
-then
-  echo "Cannot find appcfg.py in PATH. Please set environment variable."
-  exit 1
-fi
+DIR=$(dirname $0)
+DIR=$(realpath ${DIR})
 
 VERSION="$1"
 if [ "${VERSION}" = "" ]
@@ -14,10 +10,12 @@ then
   exit 1
 fi
 
-API_VERSION="go1.9"
-SDK_BASE=$(dirname $(dirname "${GCLOUD}"))
-GOROOT="${SDK_BASE}/platform/google_appengine/goroot-1.9"
-GO_APP_BUILDER="${SDK_BASE}/platform/google_appengine/goroot-1.9/bin/go-app-builder"
+export GOPATH=${DIR}
+
+echo "set GOPATH=${GOPATH}"
+echo "go get -d"
+
+go get -d
 
 APP_BASE=$(dirname "$0")
 
@@ -25,20 +23,15 @@ SRCS=magellan-gcs-uploader.go
 PKGDIR="${APP_BASE}/pkg/${VERSION}"
 MANIFEST="${PKGDIR}/_manifest"
 
-export GOOS="linux"
-export GOARCH="amd64"
-
 mkdir -p "${PKGDIR}"
 
 echo -n > "${MANIFEST}"
 
-for line in $(${GO_APP_BUILDER} -api_version ${API_VERSION} -app_base "${APP_BASE}" -arch 6 -print_extras -goroot "${GOROOT}" ${SRCS})
-do
-  filepath=$(echo "${line}" | cut -f 1 -d \|)
-  originalpath=$(echo "${line}" | cut -f 2 -d \|)
-  mkdir -p "$(dirname "${PKGDIR}/${filepath}")"
-  cp "${originalpath}" "${PKGDIR}/${filepath}"
-  (cd "${PKGDIR}" && sha1sum "${filepath}") >> "${MANIFEST}"
+for f in $(find src -name "*.go" -a -not -name "*_test.go" | sed -e 's/src\///g'); do
+  originalpath="src/${f}"
+  mkdir -p "$(dirname "${PKGDIR}/${f}")"
+  cp "${originalpath}" "${PKGDIR}/${f}"
+  (cd "${PKGDIR}" && sha1sum "${f}") >> "${MANIFEST}"
 done
 
 for filepath in ${SRCS}
