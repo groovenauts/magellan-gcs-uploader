@@ -5,6 +5,6 @@
 .*.swp
 *.yaml
 pkg/
-src/
 makepkg.sh
 README.md
+*.rb

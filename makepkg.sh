@@ -29,9 +29,10 @@ echo -n > "${MANIFEST}"
 
 for f in $(find src -name "*.go" -a -not -name "*_test.go" | sed -e 's/src\///g'); do
   originalpath="src/${f}"
-  mkdir -p "$(dirname "${PKGDIR}/${f}")"
-  cp "${originalpath}" "${PKGDIR}/${f}"
-  (cd "${PKGDIR}" && sha1sum "${f}") >> "${MANIFEST}"
+  destf="_gopath/src/${f}"
+  mkdir -p "$(dirname "${PKGDIR}/${destf}")"
+  cp "${originalpath}" "${PKGDIR}/${destf}"
+  (cd "${PKGDIR}" && sha1sum "${destf}") >> "${MANIFEST}"
 done
 
 for filepath in ${SRCS}
@@ -40,3 +41,7 @@ do
   cp "${filepath}" "${PKGDIR}/${filepath}"
   (cd "${PKGDIR}" && sha1sum "${filepath}") >> "${MANIFEST}"
 done
+
+mkdir -p "${PKGDIR}/_gopath"
+echo -n 'github.com/groovenauts/magellan-gcs-uploader' > "${PKGDIR}/_gopath/main-package-path"
+(cd "${PKGDIR}" && sha1sum "_gopath/main-package-path") >> "${MANIFEST}"
