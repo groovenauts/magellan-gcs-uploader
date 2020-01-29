@@ -5,6 +5,7 @@
 .*.swp
 *.yaml
 pkg/
-makepkg.sh
+runtime
+stage.sh
 README.md
 *.rb

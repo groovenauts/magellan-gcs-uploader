@@ -1,0 +1,82 @@
+#
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions
+#
+
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  dump:
+    name: Dump env vars, contexts
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - name: Environment Variables
+        run: export -p
+
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - name: Dump job context
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        run: echo "$JOB_CONTEXT"
+      - name: Dump steps context
+        env:
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+        run: echo "$STEPS_CONTEXT"
+      - name: Dump runner context
+        env:
+          RUNNER_CONTEXT: ${{ toJson(runner) }}
+        run: echo "$RUNNER_CONTEXT"
+      - name: Dump strategy context
+        env:
+          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+        run: echo "$STRATEGY_CONTEXT"
+      - name: Dump matrix context
+        env:
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+        run: echo "$MATRIX_CONTEXT"
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      # https://github.com/actions/checkout
+      - uses: actions/checkout@v2
+
+      # https://github.com/GoogleCloudPlatform/github-actions/tree/master/setup-gcloud
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Check Cloud SDK version/components
+        run: |
+          set -x
+          gcloud version
+          gcloud info
+          gcloud components list
+          gcloud auth list
+
+      - name: Update and install Cloud SDK components
+        run: |
+          set -x
+          gcloud components update
+          gcloud components install app-engine-go
+          gcloud components list
+
+      - name: Stage application code to Cloud Storage
+        run: |
+          set -x
+          bucket=${{ secrets.GCP_STAGE_BUCKET }}
+          version=$(basename ${{ github.ref }})
+          ./stage.sh ${bucket} ${version}
+
