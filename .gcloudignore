@@ -5,7 +5,6 @@
 *.back
 .*.swp
 *.yaml
-pkg/
 runtime
 stage.sh
 README.md
