@@ -3,7 +3,8 @@
 ## Run local server
 
 ```
-goapp serve
+export GO111MODULE=on
+go run magellan-gcs-uploader.go
 ```
 
 ## Deploy
@@ -11,7 +12,9 @@ goapp serve
 Specify GCP project id and api tokens (comma separated).
 
 ```
-appcfg.py -A YOUR-PROJECT-ID -E STORAGE_BUCKET:YOUR-BUCKET-NAME -E API_TOKEN:XXXXXXXX update .
+export GO111MODULE=on
+(Edit app.yaml to setup environment variables)
+gcloud --project=YOUR-PROJECT-ID app deploy app.yaml
 ```
 
 ### Environment Variables
@@ -28,14 +31,14 @@ appcfg.py -A YOUR-PROJECT-ID -E STORAGE_BUCKET:YOUR-BUCKET-NAME -E API_TOKEN:XXX
 
 ## Upload package to deploy via Google App Engine Admin API
 
-Run the following command To gather source files and make manifest file. `v1` stands for the version of application.
+Run the following command to gather source files and make manifest file, and upload them to gcs.
+`v1` stands for the version of application.
 
 ```
-./makepkg.sh v1
+export GO111MODULE=on
+./makepkg.sh your-gae-repository v1
 ```
 
-Upload source files and a manifest file to gcs.
+This workflow is automated by [Release workflow](.github/workflows/release.yml),
+triggered by tag push.
 
-```
-gsutil cp -R pkg/v1 gs://your-gae-repository/magellan-gcs-uploader/v1
-```
