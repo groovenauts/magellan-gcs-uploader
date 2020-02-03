@@ -66,10 +66,9 @@ jobs:
           gcloud components list
           gcloud auth list
 
-      - name: Update and install Cloud SDK components
+      - name: Install Cloud SDK components
         run: |
           set -x
-          gcloud components update
           gcloud components install app-engine-go
           gcloud components list
 
