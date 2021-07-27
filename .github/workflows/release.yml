@@ -52,8 +52,8 @@ jobs:
       # https://github.com/actions/checkout
       - uses: actions/checkout@v2
 
-      # https://github.com/GoogleCloudPlatform/github-actions/tree/master/setup-gcloud
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      # https://github.com/google-github-actions/setup-gcloud
+      - uses: google-github-actions/setup-gcloud@master
         with:
           service_account_email: ${{ secrets.GCP_SA_EMAIL }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
