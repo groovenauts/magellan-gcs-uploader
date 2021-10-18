@@ -37,8 +37,29 @@ trap "echo '>>> Cleanup'; rm -rfv ${tmpdir}" EXIT
 echo ">>> tmpdir: ${tmpdir}"
 echo ">>> stagedir: ${stagedir}"
 
+# load configuration file
+if [ ! -f stage-config.sh ]; then
+  echo "stage-config.sh not found."
+  exit 1
+fi
+
+. stage-config.sh
+
+if [ -z "${runtime}" ]; then
+  echo "runtime is not specified in stage-config.sh"
+  exit 1
+fi
+
+if [ -n "${app_dir}" ]; then
+  app_dir=${app_root}/${app_dir}
+else
+  app_dir=${app_root}
+fi
+
+echo "runtime: ${runtime}"
+echo "app_dir: ${app_dir}"
+
 # create app.yaml in temporary directory
-runtime=$(cat runtime)
 echo "runtime: ${runtime}" > ${tmpdir}/app.yaml
 echo ">>> runtime: ${runtime}"
 
@@ -56,7 +77,7 @@ fi
 
 # copy files into stage directory using go-app-stager
 echo ">>> Copy files by ${go_app_stager} into stagedir"
-${go_app_stager} -go-version=${go_version} ${tmpdir}/app.yaml ${app_root} ${stagedir}
+${go_app_stager} -go-version=${go_version} ${tmpdir}/app.yaml ${app_dir} ${stagedir}
 
 cd ${stagedir}
 

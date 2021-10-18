@@ -5,7 +5,7 @@
 *.back
 .*.swp
 *.yaml
-runtime
 stage.sh
+stage-config.sh
 README.md
 *.rb
