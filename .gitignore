@@ -1,1 +1,7 @@
 .*.swp
+
+# Ignore generated credentials from google-github-actions/auth
+# https://github.com/google-github-actions/auth#prerequisites
+# https://github.com/google-github-actions/auth/blob/main/docs/TROUBLESHOOTING.md#dirty-git-or-bundled-credentials
+gha-creds-*.json
+
