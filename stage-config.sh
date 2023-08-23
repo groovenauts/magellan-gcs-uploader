@@ -1,2 +1,2 @@
-runtime=go111
+runtime=go120
 app_dir=
