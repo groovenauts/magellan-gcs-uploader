@@ -1,6 +1,6 @@
 module github.com/groovenauts/magellan-gcs-uploader
 
-go 1.20
+go 1.25.0
 
 require (
 	cloud.google.com/go/bigquery v1.53.0

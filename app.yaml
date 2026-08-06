@@ -1,4 +1,4 @@
-runtime: go120
+runtime: go125
 env_variables:
   STORAGE_BUCKET: bucket
   API_TOKEN: XXXXXXXXXX
