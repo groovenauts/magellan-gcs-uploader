@@ -25,7 +25,7 @@ var (
 func mustGetenv(ctx context.Context, k string) string {
 	v := os.Getenv(k)
 	if v == "" {
-		log.Fatal("%s environment variable not set.", k)
+		log.Fatalf("%s environment variable not set.", k)
 	}
 	return v
 }
@@ -81,7 +81,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		outjson, e := json.Marshal(response)
 		if e != nil {
-			log.Printf(e.Error())
+			log.Print(e)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -121,7 +121,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Printf(err.Error())
+		log.Print(err)
 		response.Message = err.Error()
 		code = 500
 		return
@@ -135,14 +135,14 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = writer.Write(content)
 	if err != nil {
-		log.Printf(err.Error())
+		log.Print(err)
 		response.Message = err.Error()
 		code = 500
 		return
 	}
 	err = writer.Close()
 	if err != nil {
-		log.Printf(err.Error())
+		log.Print(err)
 		response.Message = err.Error()
 		code = 500
 		return
@@ -157,7 +157,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		// Insert metadata to BigQuery
 		bqclient, err := bigquery.NewClient(ctx, projectID)
 		if err != nil {
-			log.Printf(err.Error())
+			log.Print(err)
 			response.Message = err.Error()
 			code = 500
 			return
@@ -178,7 +178,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		err = uploader.Put(ctx, record)
 		if err != nil {
-			log.Printf(err.Error())
+			log.Print(err)
 			response.Message = err.Error()
 			code = 500
 			return
@@ -190,7 +190,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	if blocks_url != "" && blocks_api_token != "" {
 		err = postBlocksFlow(ctx, blocks_url, blocks_api_token, gcs_url, timestamp, r)
 		if err != nil {
-			log.Printf(err.Error())
+			log.Print(err)
 			response.Message = err.Error()
 			code = 500
 			return
