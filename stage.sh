@@ -24,7 +24,7 @@ echo ">>> version: ${version}"
 echo ">>> gcs_version_path: ${gcs_version_path}"
 
 # check if already uploaded
-if gsutil -q stat ${gcs_version_path}/_manifest; then
+if gcloud storage objects describe ${gcs_version_path}/_manifest > /dev/null 2>&1; then
   echo "Abort. Manifest file ${gcs_version_path}/_manifest is already uploaded."
   exit 1
 fi
@@ -92,18 +92,18 @@ done
 # upload files to Cloud Storage
 cd ${stagedir2}
 echo ">>> Upload files to cloud storage"
-gsutil -m -q rsync -r . ${gcs_version_path}
+gcloud storage rsync -r . ${gcs_version_path}
 
 # upload manifest
 echo ">>> Generate and upload menifest file to cloud storage"
 sha1sum $(cat ${tmpdir}/files-for-upload) > ${tmpdir}/_manifest
 echo ">>> * ${tmpdir}/_manifest -> ${gcs_version_path}/_manifest"
-gsutil -q cp ${tmpdir}/_manifest ${gcs_version_path}/_manifest
+gcloud storage cp ${tmpdir}/_manifest ${gcs_version_path}/_manifest
 
 # list uploaded objects
 echo ">>> List objects in ${gcs_version_path}/"
-gsutil ls -l -r ${gcs_version_path}/
+gcloud storage ls -l -r ${gcs_version_path}/
 
 # show manifest
 echo ">>> Show manifest content in ${gcs_version_path}/_manifest"
-gsutil cat ${gcs_version_path}/_manifest
+gcloud storage cat ${gcs_version_path}/_manifest
