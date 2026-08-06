@@ -36,7 +36,7 @@ Run the following command to gather source files and make manifest file, and upl
 
 ```
 export GO111MODULE=on
-./makepkg.sh your-gae-repository v1
+./stage.sh your-gae-repository v1
 ```
 
 This workflow is automated by [Release workflow](.github/workflows/release.yml),
